@@ -15,6 +15,9 @@
     <string name="okButton">Ok</string>
     <string name="dismissButton">Dismiss</string>
     <string name="calculateButton">Calculate</string>
+    <string name="air">Air</string>
+
+    <string name="error1">With supercritical flow, the pressure drop can only be calculated if the back pressure is known.</string>
 
     <color name="experience_gray">#5E6A71</color>
     <color name="experience_gray_light">#D7DADB</color>

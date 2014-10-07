@@ -100,6 +100,10 @@ public class MainActivity extends Activity
     TextView formulaField;
     Spinner fluidList;
 
+    CvKvFragment cv;
+    FlowFragment fl;
+    PressureDropFragment pd;
+
     protected RelativeLayout fullLayout;
     protected android.support.v4.view.ViewPager actContent;
 
@@ -115,6 +119,7 @@ public class MainActivity extends Activity
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
+        mViewPager.setOffscreenPageLimit(2);
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
     }
@@ -145,7 +150,7 @@ public class MainActivity extends Activity
         super.setContentView(fullLayout);
 
         fluidList = (Spinner)findViewById(R.id.fluid_list);
-        FluidsXmlAdapter fluidsXmlAdapter = new FluidsXmlAdapter(fluids);
+        final FluidsXmlAdapter fluidsXmlAdapter = new FluidsXmlAdapter(fluids);
         fluidList.setAdapter(fluidsXmlAdapter);
         fluidList.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -163,11 +168,43 @@ public class MainActivity extends Activity
                     formulaImage.setImageDrawable(null);
                     formulaField.setText(Html.fromHtml(f.getFormula()));
                 }
+                if (f.getState().equals("gas")) {
+                    if (cv != null) {
+                        cv.setTemperatureEnabled(true);
+                    }
+                    if (fl != null) {
+                        fl.setTemperatureEnabled(true);
+                    }
+                    if (pd != null) {
+                        pd.setTemperatureEnabled(true);
+                    }
+                } else {
+                    if (cv != null) {
+                        cv.setTemperatureEnabled(false);
+                    }
+                    if (fl != null) {
+                        fl.setTemperatureEnabled(false);
+                    }
+                    if (pd != null) {
+                        pd.setTemperatureEnabled(false);
+                    }
+                }
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 // Do nothing.
+            }
+        });
+        fluidList.post(new Runnable() {
+            @Override
+            public void run() {
+                for (Fluid fluid : fluids) {
+                    if (fluid.getFluidName().equals(getResources().getString(R.string.air))) {
+                        fluidList.setSelection(fluids.indexOf(fluid));
+                        break;
+                    }
+                }
             }
         });
 
@@ -276,11 +313,14 @@ public class MainActivity extends Activity
             // getItem is called to instantiate the fragment for the given page.
             switch (position) {
                 case 0:
-                    return new CvKvFragment();
+                    cv = new CvKvFragment();
+                    return cv;
                 case 1:
-                    return new FlowFragment();
+                    fl = new FlowFragment();
+                    return fl;
                 case 2:
-                    return new PressureDropFragment();
+                    pd = new PressureDropFragment();
+                    return pd;
             }
             return null;
         }

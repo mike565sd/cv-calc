@@ -21,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
+ * ${PACKAGE_NAME}
  * Created by michael.weaver on 9/30/2014.
  */
 public class FloatLabelEditText
@@ -73,7 +74,9 @@ public class FloatLabelEditText
     public void setHint(String hintText) {
         mHintText = hintText;
         mFloatingLabel.setText(hintText);
-        setupEditTextView();
+        if (mEditTextView.getText().toString().length() <= 0) {
+            setupEditTextView();
+        }
     }
 
     private void initializeView() {

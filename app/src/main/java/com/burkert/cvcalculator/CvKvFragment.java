@@ -53,6 +53,17 @@ public class CvKvFragment extends Fragment {
     ArrayList<Unit> cvkvUnitList = null;
     ArrayList<Unit> densityUnitList = null;
 
+    public void setTemperatureEnabled(boolean temperatureEnabled) {
+        if (temperatureEnabled) {
+            temperatureField.setVisibility(View.VISIBLE);
+            temperatureUnits.setVisibility(View.VISIBLE);
+        } else {
+            temperatureField.setVisibility(View.INVISIBLE);
+            temperatureUnits.setVisibility(View.INVISIBLE);
+        }
+        validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
+    }
+
     MainActivity mainActivity;
 
     Unit selectedFlowUnit, selectedInletUnit, selectedOutletUnit, selectedTemperatureUnit;
@@ -120,7 +131,7 @@ public class CvKvFragment extends Fragment {
         flowField.getEditText().addTextChangedListener(new TextValidator(flowField.getEditText()) {
             @Override
             public void validate(TextView textView, String text) {
-
+                validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
             }
         });
 
@@ -140,7 +151,7 @@ public class CvKvFragment extends Fragment {
         inletField.getEditText().addTextChangedListener(new TextValidator(inletField.getEditText()) {
             @Override
             public void validate(TextView textView, String text) {
-
+                validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
             }
         });
 
@@ -161,7 +172,7 @@ public class CvKvFragment extends Fragment {
         outletField.getEditText().addTextChangedListener(new TextValidator(outletField.getEditText()) {
             @Override
             public void validate(TextView textView, String text) {
-
+                validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
             }
         });
 
@@ -182,7 +193,7 @@ public class CvKvFragment extends Fragment {
         temperatureField.getEditText().addTextChangedListener(new TextValidator(temperatureField.getEditText()) {
             @Override
             public void validate(TextView textView, String text) {
-
+                validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
             }
         });
 
@@ -245,6 +256,15 @@ public class CvKvFragment extends Fragment {
                 // Do nothing
             }
         });
+        if (mainActivity.selectedFluid != null) {
+            if (mainActivity.selectedFluid.getState().equals("gas")) {
+                temperatureField.setVisibility(View.VISIBLE);
+                temperatureUnits.setVisibility(View.VISIBLE);
+            } else {
+                temperatureField.setVisibility(View.INVISIBLE);
+                temperatureUnits.setVisibility(View.INVISIBLE);
+            }
+        }
 
         int diameter = getResources().getDimensionPixelSize(R.dimen.round_button_diameter);
         Outline outline = new Outline();
@@ -365,7 +385,7 @@ public class CvKvFragment extends Fragment {
 
     private void validateTextFields(FloatLabelEditText[] fields) {
         for (FloatLabelEditText field : fields) {
-            if (field.getEditText().getText().toString().length() <=0 ) {
+            if (field.getVisibility() == View.VISIBLE && field.getText().length() <=0 ) {
                 goButton.setVisibility(View.INVISIBLE);
                 return;
             }
@@ -376,11 +396,11 @@ public class CvKvFragment extends Fragment {
     public void Calculate() {
         Fluid selectedFluid = mainActivity.selectedFluid;
         double kvValue, diameter, qnn;
-        double flowRate = Double.parseDouble(flowField.getEditText().getText().toString()) *
+        double flowRate = Double.parseDouble(flowField.getText()) *
                selectedFlowUnit.factor ;
-        double inletPressure = (Double.parseDouble(inletField.getEditText().getText().toString()) *
+        double inletPressure = (Double.parseDouble(inletField.getText()) *
                 selectedInletUnit.factor) + 1;
-        double outletPressure = (Double.parseDouble(outletField.getEditText().getText().toString()) *
+        double outletPressure = (Double.parseDouble(outletField.getText()) *
                 selectedOutletUnit.factor) + 1;
         double diffPressure = inletPressure - outletPressure;
         double temperature = 0;
@@ -389,7 +409,7 @@ public class CvKvFragment extends Fragment {
             return;
         }
         if (selectedFluid.getState().equals("gas")) {
-            temperature = Double.parseDouble(temperatureField.getEditText().getText().toString());
+            temperature = Double.parseDouble(temperatureField.getText());
             if (selectedTemperatureUnit.unitName.equals("°C")) {
                 temperature = temperature + 273.15;
             } else if (selectedTemperatureUnit.unitName.equals("°F")) {

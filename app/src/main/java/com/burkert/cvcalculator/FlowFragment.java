@@ -12,7 +12,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.Spinner;
@@ -53,6 +52,16 @@ public class FlowFragment extends Fragment {
     ArrayList<Unit> cvkvUnitList = null;
     ArrayList<Unit> densityUnitList = null;
 
+    public void setTemperatureEnabled(boolean temperatureEnabled) {
+        if (temperatureEnabled) {
+            temperatureField.setVisibility(View.VISIBLE);
+            temperatureUnits.setVisibility(View.VISIBLE);
+        } else {
+            temperatureField.setVisibility(View.INVISIBLE);
+            temperatureUnits.setVisibility(View.INVISIBLE);
+        }
+        validateTextFields(new FloatLabelEditText[]{cvField, inletField, outletField, temperatureField});
+    }
 
     MainActivity mainActivity;
 
@@ -121,7 +130,7 @@ public class FlowFragment extends Fragment {
         cvField.getEditText().addTextChangedListener(new TextValidator(cvField.getEditText()) {
             @Override
             public void validate(TextView textView, String text) {
-
+                validateTextFields(new FloatLabelEditText[]{cvField, inletField, outletField, temperatureField});
             }
         });
 
@@ -142,7 +151,7 @@ public class FlowFragment extends Fragment {
         inletField.getEditText().addTextChangedListener(new TextValidator(inletField.getEditText()) {
             @Override
             public void validate(TextView textView, String text) {
-
+                validateTextFields(new FloatLabelEditText[]{cvField, inletField, outletField, temperatureField});
             }
         });
         outletField = (FloatLabelEditText)rootView.findViewById(R.id.outlet_label_f);
@@ -162,7 +171,7 @@ public class FlowFragment extends Fragment {
         outletField.getEditText().addTextChangedListener(new TextValidator(outletField.getEditText()) {
             @Override
             public void validate(TextView textView, String text) {
-
+                validateTextFields(new FloatLabelEditText[]{cvField, inletField, outletField, temperatureField});
             }
         });
 
@@ -183,7 +192,7 @@ public class FlowFragment extends Fragment {
         temperatureField.getEditText().addTextChangedListener(new TextValidator(temperatureField.getEditText()) {
             @Override
             public void validate(TextView textView, String text) {
-
+                validateTextFields(new FloatLabelEditText[]{cvField, inletField, outletField, temperatureField});
             }
         });
 
@@ -193,8 +202,7 @@ public class FlowFragment extends Fragment {
         cvkvUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                Unit u = (Unit)parent.getItemAtPosition(pos);
-                selectedCvKvUnit = u;
+                selectedCvKvUnit = (Unit)parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -209,8 +217,7 @@ public class FlowFragment extends Fragment {
         inletUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                Unit u = (Unit)parent.getItemAtPosition(pos);
-                selectedInletUnit = u;
+                selectedInletUnit = (Unit)parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -225,8 +232,7 @@ public class FlowFragment extends Fragment {
         outletUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                Unit u = (Unit) parent.getItemAtPosition(pos);
-                selectedOutletUnit = u;
+                selectedOutletUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -241,8 +247,7 @@ public class FlowFragment extends Fragment {
         temperatureUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                Unit u = (Unit) parent.getItemAtPosition(pos);
-                selectedTemperatureUnit = u;
+                selectedTemperatureUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -250,7 +255,15 @@ public class FlowFragment extends Fragment {
                 // Do nothing
             }
         });
-
+        if (mainActivity.selectedFluid != null) {
+            if (mainActivity.selectedFluid.getState().equals("gas")) {
+                temperatureField.setVisibility(View.VISIBLE);
+                temperatureUnits.setVisibility(View.VISIBLE);
+            } else {
+                temperatureField.setVisibility(View.INVISIBLE);
+                temperatureUnits.setVisibility(View.INVISIBLE);
+            }
+        }
 
         int diameter = getResources().getDimensionPixelSize(R.dimen.round_button_diameter);
         Outline outline = new Outline();
@@ -327,11 +340,11 @@ public class FlowFragment extends Fragment {
             String name;
             switch (eventType) {
                 case XmlPullParser.START_DOCUMENT:
-                    flowUnitList = new ArrayList();
-                    pressureUnitList = new ArrayList();
-                    temperatureUnitList = new ArrayList();
-                    cvkvUnitList = new ArrayList();
-                    densityUnitList = new ArrayList();
+                    flowUnitList = new ArrayList<Unit>();
+                    pressureUnitList = new ArrayList<Unit>();
+                    temperatureUnitList = new ArrayList<Unit>();
+                    cvkvUnitList = new ArrayList<Unit>();
+                    densityUnitList = new ArrayList<Unit>();
                     break;
                 case XmlPullParser.START_TAG:
                     name = parser.getName();
@@ -370,9 +383,8 @@ public class FlowFragment extends Fragment {
     }
 
     private void validateTextFields(FloatLabelEditText[] fields) {
-        for (int i=0; i<fields.length; i++) {
-            FloatLabelEditText currentField = fields[i];
-            if (currentField.getEditText().getText().toString().length()<=0) {
+        for (FloatLabelEditText field : fields) {
+            if (field.getVisibility() == View.VISIBLE && field.getText().length() <=0 ) {
                 goButton.setVisibility(View.INVISIBLE);
                 return;
             }
@@ -383,11 +395,11 @@ public class FlowFragment extends Fragment {
     public void Calculate() {
         Fluid selectedFluid = mainActivity.selectedFluid;
         double flowRate;
-        double kvValue = Double.parseDouble(cvField.getEditText().getText().toString()) *
+        double kvValue = Double.parseDouble(cvField.getText()) *
                 selectedCvKvUnit.factor;
-        double inletPressure = (Double.parseDouble(inletField.getEditText().getText().toString()) *
+        double inletPressure = (Double.parseDouble(inletField.getText()) *
                 selectedInletUnit.factor) + 1;
-        double outletPressure = (Double.parseDouble(outletField.getEditText().getText().toString()) *
+        double outletPressure = (Double.parseDouble(outletField.getText()) *
                 selectedOutletUnit.factor) + 1;
         double diffPressure = inletPressure - outletPressure;
         double temperature = 0;
@@ -396,7 +408,7 @@ public class FlowFragment extends Fragment {
             return;
         }
         if (selectedFluid.getState().equals("gas")) {
-            temperature = Double.parseDouble(temperatureField.getEditText().getText().toString());
+            temperature = Double.parseDouble(temperatureField.getText());
             if (selectedTemperatureUnit.unitName.equals("°C")) {
                 temperature = temperature + 273.15;
             } else if (selectedTemperatureUnit.unitName.equals("°F")) {
