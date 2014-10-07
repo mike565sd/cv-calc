@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="flow_units_array">
+        <item>CFH</item>
+        <item>CFM</item>
+        <item>GPM</item>
+        <item>l/min</item>
+        <item>l/h</item>
+        <item>m³/h</item>
+        <item>cm³/min</item>
+        <item>cm³/h</item>
+        <item>ml/h</item>
+        <item>g/min</item>
+        <item>g/h</item>
+        <item>kg/h</item>
+    </string-array>
+    <string-array name="pressure_units_array">
+        <item>bar</item>
+        <item>mbar</item>
+        <item>PSI</item>
+        <item>PSF</item>
+        <item>kPa</item>
+        <item>Pa</item>
+    </string-array>
+    <string-array name="temperature_units_array">
+        <item>°C</item>
+        <item>°F</item>
+        <item>K</item>
+    </string-array>
+    <string-array name="cvkv_array">
+        <item>Cv</item>
+        <item>Kv</item>
+    </string-array>
+</resources>

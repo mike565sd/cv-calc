@@ -1,0 +1,15 @@
+<resources>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="activity_horizontal_margin_double">24dp</dimen>
+    <dimen name="activity_vertical_margin_double">32dp</dimen>
+    <dimen name="text_input_layout_height">64dp</dimen>
+    <dimen name="units_spinner_layout_width">96dip</dimen>
+    <dimen name="units_spinner_layout_height">48dp</dimen>
+    <dimen name="text_input_text_size">16sp</dimen>
+    <dimen name="round_button_diameter">56dp</dimen>
+    <dimen name="elevation_low">1dp</dimen>
+    <dimen name="elevation_high">4dp</dimen>
+    <dimen name="go_button_margin">16dp</dimen>
+</resources>

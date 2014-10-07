@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">CV Calculator</string>
+    <string name="title_section1">Cv/Kv</string>
+    <string name="title_section2">Flow</string>
+    <string name="title_section3">Pressure Drop</string>
+    <string name="flow">Flow</string>
+    <string name="inlet">Inlet Pressure</string>
+    <string name="outlet">Outlet Pressure</string>
+    <string name="temperature">Temperature</string>
+    <string name="cvkv">Flow Coefficient</string>
+    <string name="action_settings">Settings</string>
+    <string name="fluid_icon">Fluid Icon</string>
+    <string name="okButton">Ok</string>
+    <string name="dismissButton">Dismiss</string>
+    <string name="calculateButton">Calculate</string>
+
+    <color name="experience_gray">#5E6A71</color>
+    <color name="experience_gray_light">#D7DADB</color>
+    <color name="courage_blue">#7090B7</color>
+    <color name="courage_blue_light">#94ACC9</color>
+    <color name="white">#FFFFFF</color>
+
+</resources>

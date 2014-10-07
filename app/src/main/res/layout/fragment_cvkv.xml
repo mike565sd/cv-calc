@@ -1,0 +1,143 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:floatlabel="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cvkv_fragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:background="@color/white"
+    tools:context=".CvKvFragment">
+
+    <LinearLayout
+        android:id="@+id/flow_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:orientation="horizontal"
+        android:gravity="bottom">
+
+        <com.burkert.cvcalculator.FloatLabelEditText
+            android:id="@+id/flow_label"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/text_input_layout_height"
+            android:layout_weight="1"
+
+            floatlabel:hint="@string/flow"
+            floatlabel:textSize="@dimen/text_input_text_size"
+            floatlabel:textColorHintFocused="@color/courage_blue"
+            floatlabel:textColorHintUnFocused="@color/experience_gray"
+            floatlabel:fitScreenWidth="full"
+            floatlabel:inputType="numeric"/>
+
+        <Spinner
+            android:id="@+id/flow_units"
+            android:layout_width="@dimen/units_spinner_layout_width"
+            android:layout_height="@dimen/units_spinner_layout_height">
+        </Spinner>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/inlet_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/flow_group"
+        android:orientation="horizontal"
+        android:gravity="bottom">
+
+        <com.burkert.cvcalculator.FloatLabelEditText
+            android:id="@+id/inlet_label"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/text_input_layout_height"
+            android:layout_weight="1"
+
+            floatlabel:hint="@string/inlet"
+            floatlabel:textSize="@dimen/text_input_text_size"
+            floatlabel:textColorHintFocused="@color/courage_blue"
+            floatlabel:textColorHintUnFocused="@color/experience_gray"
+            floatlabel:fitScreenWidth="full"
+            floatlabel:inputType="numeric"/>
+
+        <Spinner
+            android:id="@+id/inlet_units"
+            android:layout_width="@dimen/units_spinner_layout_width"
+            android:layout_height="@dimen/units_spinner_layout_height">
+        </Spinner>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/outlet_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/inlet_group"
+        android:orientation="horizontal"
+        android:gravity="bottom">
+
+        <com.burkert.cvcalculator.FloatLabelEditText
+            android:id="@+id/outlet_label"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/text_input_layout_height"
+            android:layout_weight="1"
+
+            floatlabel:hint="@string/outlet"
+            floatlabel:textSize="@dimen/text_input_text_size"
+            floatlabel:textColorHintFocused="@color/courage_blue"
+            floatlabel:textColorHintUnFocused="@color/experience_gray"
+            floatlabel:fitScreenWidth="full"
+            floatlabel:inputType="numeric"/>
+
+        <Spinner
+            android:id="@+id/outlet_units"
+            android:layout_width="@dimen/units_spinner_layout_width"
+            android:layout_height="@dimen/units_spinner_layout_height">
+        </Spinner>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/temperature_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/outlet_group"
+        android:orientation="horizontal"
+        android:gravity="bottom">
+
+        <com.burkert.cvcalculator.FloatLabelEditText
+            android:id="@+id/temperature_label"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/text_input_layout_height"
+            android:layout_weight="1"
+
+            floatlabel:hint="@string/temperature"
+            floatlabel:textSize="@dimen/text_input_text_size"
+            floatlabel:textColorHintFocused="@color/courage_blue"
+            floatlabel:textColorHintUnFocused="@color/experience_gray"
+            floatlabel:fitScreenWidth="full"
+            floatlabel:inputType="numeric"/>
+
+        <Spinner
+            android:id="@+id/temperature_units"
+            android:layout_width="@dimen/units_spinner_layout_width"
+            android:layout_height="@dimen/units_spinner_layout_height">
+        </Spinner>
+
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/go_button"
+        android:layout_width="@dimen/round_button_diameter"
+        android:layout_height="@dimen/round_button_diameter"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/go"
+        android:tint="@android:color/white"
+        android:background="@drawable/oval"
+        android:elevation="@dimen/elevation_low"
+        android:stateListAnimator="@anim/button_elevation"
+        android:contentDescription="@string/calculateButton" />
+
+</RelativeLayout>
