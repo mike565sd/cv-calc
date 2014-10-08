@@ -20,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SpinnerAdapter;
@@ -76,8 +77,8 @@ class Unit {
 }
 
 public class MainActivity extends Activity
-    implements CvKvFragment.OnCalculateCvKvListener, FlowFragment.OnCalculateFlowListener,
-                PressureDropFragment.OnCalculatePressureDropListener {
+        implements CvKvFragment.OnCalculateCvKvListener, FlowFragment.OnCalculateFlowListener,
+        PressureDropFragment.OnCalculatePressureDropListener {
 
     public Fluid selectedFluid;
     /**
@@ -90,12 +91,17 @@ public class MainActivity extends Activity
      */
     SectionsPagerAdapter mSectionsPagerAdapter;
 
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
-    ViewPager mViewPager;
+     /**
+      * The {@link ViewPager} that will host the section contents.
+      */
+     ViewPager mViewPager;
 
     ArrayList<Fluid> fluids = null;
+    ArrayList<Unit> flowUnitList = null;
+    ArrayList<Unit> pressureUnitList = null;
+    ArrayList<Unit> temperatureUnitList = null;
+    ArrayList<Unit> cvkvUnitList = null;
+    ArrayList<Unit> densityUnitList = null;
     ImageView formulaImage;
     TextView formulaField;
     Spinner fluidList;
@@ -106,6 +112,12 @@ public class MainActivity extends Activity
 
     protected RelativeLayout fullLayout;
     protected android.support.v4.view.ViewPager actContent;
+
+    public UnitsXmlAdapter flowUnitsXmlAdapter;
+    public UnitsXmlAdapter pressureUnitsXmlAdapter;
+    public UnitsXmlAdapter temperatureUnitsXmlAdapter;
+    public UnitsXmlAdapter cvkvUnitsXmlAdapter;
+    public UnitsXmlAdapter densityUnitsXmlAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,7 +133,6 @@ public class MainActivity extends Activity
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setOffscreenPageLimit(2);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-
     }
 
     @Override
@@ -138,28 +149,54 @@ public class MainActivity extends Activity
             parser.setInput(in_s, null);
 
             parseFluidXML(parser);
+
+            pullParserFactory = XmlPullParserFactory.newInstance();
+            parser = pullParserFactory.newPullParser();
+
+            in_s = this.getResources().openRawResource(R.raw.units);
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+            parser.setInput(in_s, null);
+
+            parseUnitXML(parser);
         } catch (XmlPullParserException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        fullLayout = (RelativeLayout)getLayoutInflater().inflate(R.layout.activity_main, null);
-        actContent = (ViewPager)fullLayout.findViewById(R.id.pager);
+        fullLayout = (RelativeLayout) getLayoutInflater().inflate(R.layout.activity_main, null);
+        actContent = (ViewPager) fullLayout.findViewById(R.id.pager);
         getLayoutInflater().inflate(layoutResID, actContent, true);
         super.setContentView(fullLayout);
 
-        fluidList = (Spinner)findViewById(R.id.fluid_list);
+        flowUnitsXmlAdapter = new UnitsXmlAdapter(flowUnitList);
+        pressureUnitsXmlAdapter = new UnitsXmlAdapter(pressureUnitList);
+        temperatureUnitsXmlAdapter = new UnitsXmlAdapter(temperatureUnitList);
+        cvkvUnitsXmlAdapter = new UnitsXmlAdapter(cvkvUnitList);
+        densityUnitsXmlAdapter = new UnitsXmlAdapter(densityUnitList);
+
+        fluidList = (Spinner) findViewById(R.id.fluid_list);
         final FluidsXmlAdapter fluidsXmlAdapter = new FluidsXmlAdapter(fluids);
         fluidList.setAdapter(fluidsXmlAdapter);
+        fluidList.post(new Runnable() {
+            @Override
+            public void run() {
+                for (Fluid fluid : fluids) {
+                    if (fluid.getFluidName().equals(getResources().getString(R.string.air))) {
+                        fluidList.setSelection(fluids.indexOf(fluid));
+                        break;
+                    }
+                }
+            }
+        });
         fluidList.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                Fluid f = (Fluid)parent.getItemAtPosition(pos);
+                Fluid f = (Fluid) parent.getItemAtPosition(pos);
                 selectedFluid = f;
                 if (f.getFormula() == null || f.getFormula().isEmpty()) {
                     formulaField.setText("");
-                    if (f.getState().equals("gas")){
+                    if (f.getState().equals("gas")) {
                         formulaImage.setImageResource(R.drawable.air);
                     } else {
                         formulaImage.setImageResource(R.drawable.liquid);
@@ -196,22 +233,11 @@ public class MainActivity extends Activity
                 // Do nothing.
             }
         });
-        fluidList.post(new Runnable() {
-            @Override
-            public void run() {
-                for (Fluid fluid : fluids) {
-                    if (fluid.getFluidName().equals(getResources().getString(R.string.air))) {
-                        fluidList.setSelection(fluids.indexOf(fluid));
-                        break;
-                    }
-                }
-            }
-        });
 
-        formulaField = (TextView)findViewById(R.id.fluid_symbol_text);
-        formulaField.setText(Html.fromHtml(((Fluid)fluidList.getSelectedItem()).getFormula()));
+        formulaField = (TextView) findViewById(R.id.fluid_symbol_text);
+        formulaField.setText(Html.fromHtml(((Fluid) fluidList.getSelectedItem()).getFormula()));
 
-        formulaImage = (ImageView)findViewById(R.id.fluid_symbol_image);
+        formulaImage = (ImageView) findViewById(R.id.fluid_symbol_image);
     }
 
     private class FluidsXmlAdapter extends BaseAdapter implements SpinnerAdapter {
@@ -240,10 +266,10 @@ public class MainActivity extends Activity
         @Override
         public View getDropDownView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
-                LayoutInflater vi = (LayoutInflater)getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                LayoutInflater vi = (LayoutInflater) getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 convertView = vi.inflate(R.layout.spinner_dropdown_item, parent, false);
             }
-            ((TextView)convertView).setText(data.get(position).getFluidName());
+            ((TextView) convertView).setText(data.get(position).getFluidName());
             return convertView;
         }
 
@@ -251,9 +277,9 @@ public class MainActivity extends Activity
         public View getView(int position, View recycle, ViewGroup parent) {
             TextView text;
             if (recycle != null) {
-                text = (TextView)recycle;
+                text = (TextView) recycle;
             } else {
-                text = (TextView)getLayoutInflater().inflate(
+                text = (TextView) getLayoutInflater().inflate(
                         R.layout.spinner_item, parent, false
                 );
             }
@@ -296,6 +322,110 @@ public class MainActivity extends Activity
             }
             eventType = parser.next();
         }
+    }
+
+    private class UnitsXmlAdapter extends BaseAdapter implements SpinnerAdapter {
+
+        private final List<Unit> data;
+
+        public UnitsXmlAdapter(List<Unit> data) {
+            this.data = data;
+        }
+
+        @Override
+        public int getCount() {
+            return data.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return data.get(position);
+        }
+
+        @Override
+        public long getItemId(int i) {
+            return i;
+        }
+
+        @Override
+        public View getDropDownView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                LayoutInflater vi = (LayoutInflater) getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                convertView = vi.inflate(R.layout.spinner_dropdown_item, parent, false);
+            }
+            ((TextView) convertView).setText(data.get(position).unitName);
+            return convertView;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                LayoutInflater vi = (LayoutInflater) getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                convertView = vi.inflate(R.layout.spinner_dropdown_item, parent, false);
+            }
+            ((TextView) convertView).setText(data.get(position).unitName);
+            return convertView;
+        }
+    }
+
+    private void parseUnitXML(XmlPullParser parser) throws XmlPullParserException, IOException {
+        int eventType = parser.getEventType();
+        Unit currentUnit = null;
+
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            String name;
+            switch (eventType) {
+                case XmlPullParser.START_DOCUMENT:
+                    flowUnitList = new ArrayList<Unit>();
+                    pressureUnitList = new ArrayList<Unit>();
+                    temperatureUnitList = new ArrayList<Unit>();
+                    cvkvUnitList = new ArrayList<Unit>();
+                    densityUnitList = new ArrayList<Unit>();
+                    break;
+                case XmlPullParser.START_TAG:
+                    name = parser.getName();
+                    if (name.equals("Unit")) {
+                        currentUnit = new Unit();
+                    } else if (currentUnit != null) {
+                        if (name.equals("Name")) {
+                            currentUnit.unitName = parser.nextText();
+                        } else if (name.equals("Factor")) {
+                            currentUnit.factor = Float.parseFloat(parser.nextText());
+                        } else if (name.equals("UnitType")) {
+                            currentUnit.unitType = parser.nextText();
+                        }
+                    }
+                    break;
+                case XmlPullParser.END_TAG:
+                    name = parser.getName();
+                    if (name.equalsIgnoreCase("Unit") && currentUnit != null) {
+                        if (currentUnit.unitType.equals("Volumetric")) {
+                            flowUnitList.add(currentUnit);
+                        } else if (currentUnit.unitType.equals("Mass")) {
+                            flowUnitList.add(currentUnit);
+                        } else if (currentUnit.unitType.equals("Pressure")) {
+                            pressureUnitList.add(currentUnit);
+                        } else if (currentUnit.unitType.equals("Temperature")) {
+                            temperatureUnitList.add(currentUnit);
+                        } else if (currentUnit.unitType.equals("CvKv")) {
+                            cvkvUnitList.add(currentUnit);
+                        } else if (currentUnit.unitType.equals("Density")) {
+                            densityUnitList.add(currentUnit);
+                        }
+                    }
+            }
+            eventType = parser.next();
+        }
+    }
+
+    public void validateTextFields(FloatLabelEditText[] fields, ImageButton goButton) {
+        for (FloatLabelEditText field : fields) {
+            if (field.getVisibility() == View.VISIBLE && field.getText().length() <= 0) {
+                goButton.setVisibility(View.INVISIBLE);
+                return;
+            }
+        }
+        goButton.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -348,8 +478,23 @@ public class MainActivity extends Activity
 
     @Override
     public void displayResultCard(String message) {
-        Intent intent = new Intent(this,ResultCard.class);
+        Intent intent = new Intent(this, ResultCard.class);
         intent.putExtra("RESULT_TEXT", message);
+        startActivity(intent);
+    }
+
+    @Override
+    public void displayResultCard(Double flowRate) {
+        Intent intent = new Intent(this, ResultCard.class);
+        intent.putExtra("FLOW_RATE", flowRate);
+        startActivity(intent);
+    }
+
+    @Override
+    public void displayResultCard(Double diffPressure, String selectedUnit) {
+        Intent intent = new Intent(this, ResultCard.class);
+        intent.putExtra("DIFF_PRESSURE", diffPressure);
+        intent.putExtra("SELECTED_UNIT", selectedUnit);
         startActivity(intent);
     }
 }

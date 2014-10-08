@@ -1,7 +1,6 @@
 package com.burkert.cvcalculator;
 
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Outline;
 import android.os.Bundle;
 import android.app.Fragment;
@@ -11,23 +10,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 
 import android.os.Handler;
 import android.widget.ImageButton;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * ${PROJECT_NAME}
@@ -47,12 +35,6 @@ public class CvKvFragment extends Fragment {
 
     Handler handler;
 
-    ArrayList<Unit> flowUnitList = null;
-    ArrayList<Unit> pressureUnitList = null;
-    ArrayList<Unit> temperatureUnitList = null;
-    ArrayList<Unit> cvkvUnitList = null;
-    ArrayList<Unit> densityUnitList = null;
-
     public void setTemperatureEnabled(boolean temperatureEnabled) {
         if (temperatureEnabled) {
             temperatureField.setVisibility(View.VISIBLE);
@@ -61,7 +43,7 @@ public class CvKvFragment extends Fragment {
             temperatureField.setVisibility(View.INVISIBLE);
             temperatureUnits.setVisibility(View.INVISIBLE);
         }
-        validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
+        mainActivity.validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField}, goButton);
     }
 
     MainActivity mainActivity;
@@ -74,7 +56,7 @@ public class CvKvFragment extends Fragment {
         public void displayResultCard(String message);
     }
 
-    public CvKvFragment(){
+    public CvKvFragment() {
         handler = new Handler();
     }
 
@@ -83,127 +65,70 @@ public class CvKvFragment extends Fragment {
         super.onAttach(activity);
 
         try {
-            mCallback = (OnCalculateCvKvListener)activity;
+            mCallback = (OnCalculateCvKvListener) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString()
-                + " must implement OnCalculateListener");
+                    + " must implement OnCalculateListener");
         }
+    }
+
+    private TextView.OnEditorActionListener editorActionListener = new TextView.OnEditorActionListener() {
+        @Override
+        public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+            int result = i & EditorInfo.IME_MASK_ACTION;
+            switch (result) {
+                case EditorInfo.IME_ACTION_DONE:
+                case EditorInfo.IME_ACTION_NEXT:
+                    mainActivity.validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField}, goButton);
+                    return false;
+            }
+            return false;
+        }
+    };
+
+    private TextValidator getTextValidator(TextView textView) {
+        return new TextValidator(textView) {
+            @Override
+            public void validate(TextView textView, String text) {
+                mainActivity.validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField}, goButton);
+                if (inletField.getText().length() > 0 && outletField.getText().length() > 0) {
+                    if (Double.parseDouble(inletField.getText()) <= Double.parseDouble(outletField.getText())) {
+                        Toast.makeText(getActivity().getBaseContext(), "Inlet pressure must be higher than outlet pressure.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        };
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        mainActivity = (MainActivity)getActivity();
-
-        XmlPullParserFactory pullParserFactory;
-
-        try {
-            pullParserFactory = XmlPullParserFactory.newInstance();
-            XmlPullParser parser = pullParserFactory.newPullParser();
-
-            InputStream in_s = this.getResources().openRawResource(R.raw.units);
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-            parser.setInput(in_s, null);
-
-            parseUnitXML(parser);
-        } catch (XmlPullParserException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        mainActivity = (MainActivity) getActivity();
 
         View rootView = inflater.inflate(R.layout.fragment_cvkv, container, false);
 
-        flowField = (FloatLabelEditText)rootView.findViewById(R.id.flow_label);
-        flowField.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                int result = i & EditorInfo.IME_MASK_ACTION;
-                switch (result) {
-                    case EditorInfo.IME_ACTION_DONE:
-                    case EditorInfo.IME_ACTION_NEXT:
-                        validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
-                        return false;
-                }
-                return false;
-            }
-        });
-        flowField.getEditText().addTextChangedListener(new TextValidator(flowField.getEditText()) {
-            @Override
-            public void validate(TextView textView, String text) {
-                validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
-            }
-        });
+        flowField = (FloatLabelEditText) rootView.findViewById(R.id.flow_label);
+        flowField.getEditText().setOnEditorActionListener(editorActionListener);
+        flowField.getEditText().addTextChangedListener(getTextValidator(flowField.getEditText()));
 
-        inletField = (FloatLabelEditText)rootView.findViewById(R.id.inlet_label);
-        inletField.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                int result = i & EditorInfo.IME_MASK_ACTION;
-                switch (result) {
-                    case EditorInfo.IME_ACTION_DONE:
-                    case EditorInfo.IME_ACTION_NEXT:
-                        validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
-                }
-                return false;
-            }
-        });
-        inletField.getEditText().addTextChangedListener(new TextValidator(inletField.getEditText()) {
-            @Override
-            public void validate(TextView textView, String text) {
-                validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
-            }
-        });
+        inletField = (FloatLabelEditText) rootView.findViewById(R.id.inlet_label);
+        inletField.getEditText().setOnEditorActionListener(editorActionListener);
+        inletField.getEditText().addTextChangedListener(getTextValidator(inletField.getEditText()));
 
-        outletField = (FloatLabelEditText)rootView.findViewById(R.id.outlet_label);
-        outletField.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                int result = i & EditorInfo.IME_MASK_ACTION;
-                switch (result) {
-                    case EditorInfo.IME_ACTION_DONE:
-                    case EditorInfo.IME_ACTION_NEXT:
-                        validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
-                        return false;
-                }
-                return false;
-            }
-        });
-        outletField.getEditText().addTextChangedListener(new TextValidator(outletField.getEditText()) {
-            @Override
-            public void validate(TextView textView, String text) {
-                validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
-            }
-        });
+        outletField = (FloatLabelEditText) rootView.findViewById(R.id.outlet_label);
+        outletField.getEditText().setOnEditorActionListener(editorActionListener);
+        outletField.getEditText().addTextChangedListener(getTextValidator(outletField.getEditText()));
 
-        temperatureField = (FloatLabelEditText)rootView.findViewById(R.id.temperature_label);
-        temperatureField.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                int result = i & EditorInfo.IME_MASK_ACTION;
-                switch (result) {
-                    case EditorInfo.IME_ACTION_DONE:
-                    case EditorInfo.IME_ACTION_NEXT:
-                        validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
-                        return false;
-                }
-                return false;
-            }
-        });
-        temperatureField.getEditText().addTextChangedListener(new TextValidator(temperatureField.getEditText()) {
-            @Override
-            public void validate(TextView textView, String text) {
-                validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField});
-            }
-        });
+        temperatureField = (FloatLabelEditText) rootView.findViewById(R.id.temperature_label);
+        temperatureField.getEditText().setOnEditorActionListener(editorActionListener);
+        temperatureField.getEditText().addTextChangedListener(getTextValidator(temperatureField.getEditText()));
 
-        flowUnits = (Spinner)rootView.findViewById(R.id.flow_units);
-        UnitsXmlAdapter unitsXmlAdapter = new UnitsXmlAdapter(flowUnitList);
-        flowUnits.setAdapter(unitsXmlAdapter);
+        flowUnits = (Spinner) rootView.findViewById(R.id.flow_units);
+        flowUnits.setAdapter(mainActivity.flowUnitsXmlAdapter);
         flowUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                selectedFlowUnit = (Unit)parent.getItemAtPosition(pos);
+                selectedFlowUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -212,13 +137,12 @@ public class CvKvFragment extends Fragment {
             }
         });
 
-        inletUnits = (Spinner)rootView.findViewById(R.id.inlet_units);
-        unitsXmlAdapter = new UnitsXmlAdapter(pressureUnitList);
-        inletUnits.setAdapter(unitsXmlAdapter);
+        inletUnits = (Spinner) rootView.findViewById(R.id.inlet_units);
+        inletUnits.setAdapter(mainActivity.pressureUnitsXmlAdapter);
         inletUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                selectedInletUnit = (Unit)parent.getItemAtPosition(pos);
+                selectedInletUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -227,13 +151,12 @@ public class CvKvFragment extends Fragment {
             }
         });
 
-        outletUnits = (Spinner)rootView.findViewById(R.id.outlet_units);
-        unitsXmlAdapter = new UnitsXmlAdapter(pressureUnitList);
-        outletUnits.setAdapter(unitsXmlAdapter);
+        outletUnits = (Spinner) rootView.findViewById(R.id.outlet_units);
+        outletUnits.setAdapter(mainActivity.pressureUnitsXmlAdapter);
         outletUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                selectedOutletUnit = (Unit)parent.getItemAtPosition(pos);
+                selectedOutletUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -242,13 +165,12 @@ public class CvKvFragment extends Fragment {
             }
         });
 
-        temperatureUnits = (Spinner)rootView.findViewById(R.id.temperature_units);
-        unitsXmlAdapter = new UnitsXmlAdapter(temperatureUnitList);
-        temperatureUnits.setAdapter(unitsXmlAdapter);
+        temperatureUnits = (Spinner) rootView.findViewById(R.id.temperature_units);
+        temperatureUnits.setAdapter(mainActivity.temperatureUnitsXmlAdapter);
         temperatureUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                selectedTemperatureUnit = (Unit)parent.getItemAtPosition(pos);
+                selectedTemperatureUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -256,6 +178,7 @@ public class CvKvFragment extends Fragment {
                 // Do nothing
             }
         });
+
         if (mainActivity.selectedFluid != null) {
             if (mainActivity.selectedFluid.getState().equals("gas")) {
                 temperatureField.setVisibility(View.VISIBLE);
@@ -270,7 +193,7 @@ public class CvKvFragment extends Fragment {
         Outline outline = new Outline();
         outline.setOval(0, 0, diameter, diameter);
 
-        goButton = (ImageButton)rootView.findViewById(R.id.go_button);
+        goButton = (ImageButton) rootView.findViewById(R.id.go_button);
         goButton.setOutline(outline);
         goButton.setClipToOutline(true);
         goButton.setVisibility(View.INVISIBLE);
@@ -281,7 +204,7 @@ public class CvKvFragment extends Fragment {
             }
         });
 
-        return  rootView;
+        return rootView;
     }
 
     @Override
@@ -289,115 +212,18 @@ public class CvKvFragment extends Fragment {
         super.onCreate(savedInstanceState);
     }
 
-    private class UnitsXmlAdapter extends BaseAdapter implements SpinnerAdapter {
-
-        private final List<Unit> data;
-
-        public UnitsXmlAdapter(List<Unit> data) {
-            this.data = data;
-        }
-
-        @Override
-        public int getCount() {
-            return data.size();
-        }
-
-        @Override
-        public Object getItem(int position) {
-            return data.get(position);
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public View getDropDownView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                LayoutInflater vi = (LayoutInflater)getActivity().getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = vi.inflate(R.layout.spinner_dropdown_item, parent, false);
-            }
-            ((TextView)convertView).setText(data.get(position).unitName);
-            return convertView;
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                LayoutInflater vi = (LayoutInflater)getActivity().getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = vi.inflate(R.layout.spinner_dropdown_item, parent, false);
-            }
-            ((TextView)convertView).setText(data.get(position).unitName);
-            return convertView;
-        }
-    }
-
-    private void parseUnitXML(XmlPullParser parser) throws XmlPullParserException, IOException {
-        int eventType = parser.getEventType();
-        Unit currentUnit = null;
-
-        while (eventType != XmlPullParser.END_DOCUMENT) {
-            String name;
-            switch (eventType) {
-                case XmlPullParser.START_DOCUMENT:
-                    flowUnitList = new ArrayList<Unit>();
-                    pressureUnitList = new ArrayList<Unit>();
-                    temperatureUnitList = new ArrayList<Unit>();
-                    cvkvUnitList = new ArrayList<Unit>();
-                    densityUnitList = new ArrayList<Unit>();
-                    break;
-                case XmlPullParser.START_TAG:
-                    name = parser.getName();
-                    if (name.equals("Unit")) {
-                        currentUnit = new Unit();
-                    } else if (currentUnit != null) {
-                        if (name.equals("Name")) {
-                            currentUnit.unitName = parser.nextText();
-                        } else if (name.equals("Factor")) {
-                            currentUnit.factor = Float.parseFloat(parser.nextText());
-                        } else if (name.equals("UnitType")) {
-                            currentUnit.unitType = parser.nextText();
-                        }
-                    }
-                    break;
-                case XmlPullParser.END_TAG:
-                    name = parser.getName();
-                    if (name.equalsIgnoreCase("Unit") && currentUnit != null) {
-                        if (currentUnit.unitType.equals("Volumetric")) {
-                            flowUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("Mass")) {
-                            flowUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("Pressure")) {
-                            pressureUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("Temperature")) {
-                            temperatureUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("CvKv")) {
-                            cvkvUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("Density")) {
-                            densityUnitList.add(currentUnit);
-                        }
-                    }
-            }
-            eventType = parser.next();
-        }
-    }
-
-    private void validateTextFields(FloatLabelEditText[] fields) {
-        for (FloatLabelEditText field : fields) {
-            if (field.getVisibility() == View.VISIBLE && field.getText().length() <=0 ) {
-                goButton.setVisibility(View.INVISIBLE);
-                return;
-            }
-        }
-        goButton.setVisibility(View.VISIBLE);
+    @Override
+    public void onResume() {
+        super.onResume();
+        goButton.setEnabled(true);
     }
 
     public void Calculate() {
+        goButton.setEnabled(false);
         Fluid selectedFluid = mainActivity.selectedFluid;
         double kvValue, diameter, qnn;
         double flowRate = Double.parseDouble(flowField.getText()) *
-               selectedFlowUnit.factor ;
+                selectedFlowUnit.factor;
         double inletPressure = (Double.parseDouble(inletField.getText()) *
                 selectedInletUnit.factor) + 1;
         double outletPressure = (Double.parseDouble(outletField.getText()) *
@@ -432,11 +258,17 @@ public class CvKvFragment extends Fragment {
         qnn = kvValue * 1078;
         diameter = Math.sqrt(qnn / 30);
         String resultText =
-                String.format("Cv:\t\t%.4f\r\nKv:\t\t%.4f\r\nQNN-value:\t%.3f l/min", kvValue * 1.156, kvValue, qnn);
+                String.format("Cv:\t\t%.4f\r\nKv:\t\t%.4f\r\nQNN-value:\t\t%.3f l/min", kvValue * 1.156, kvValue, qnn);
         if (diameter < 6) {
-            resultText += String.format("\r\nDN approx:\t%.3f mm", diameter);
+            resultText += String.format("\r\nDN approx:\t\t%.3f mm", diameter);
         }
 
-        mCallback.displayResultCard(resultText);
+        final String finalResultText = resultText;
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mCallback.displayResultCard(finalResultText);
+            }
+        }, 200);
     }
 }

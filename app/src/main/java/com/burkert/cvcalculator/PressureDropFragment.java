@@ -2,7 +2,6 @@ package com.burkert.cvcalculator;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.content.Context;
 import android.graphics.Outline;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,22 +11,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 import android.widget.Switch;
 import android.widget.TextView;
-
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import android.widget.Toast;
 
 /**
  * ${PACKAGE_NAME}
@@ -48,12 +37,6 @@ public class PressureDropFragment extends Fragment {
 
     Handler handler;
 
-    ArrayList<Unit> flowUnitList = null;
-    ArrayList<Unit> pressureUnitList = null;
-    ArrayList<Unit> temperatureUnitList = null;
-    ArrayList<Unit> cvkvUnitList = null;
-    ArrayList<Unit> densityUnitList = null;
-
     boolean inletPressure = true;
 
     public void setTemperatureEnabled(boolean temperatureEnabled) {
@@ -64,7 +47,7 @@ public class PressureDropFragment extends Fragment {
             temperatureField.setVisibility(View.INVISIBLE);
             temperatureUnits.setVisibility(View.INVISIBLE);
         }
-        validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
+        mainActivity.validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField}, goButton);
     }
 
     MainActivity mainActivity;
@@ -74,10 +57,10 @@ public class PressureDropFragment extends Fragment {
     OnCalculatePressureDropListener mCallback;
 
     public interface OnCalculatePressureDropListener {
-        public void displayResultCard(String message);
+        public void displayResultCard(Double diffPressure, String selectedUnit);
     }
 
-    public PressureDropFragment(){
+    public PressureDropFragment() {
         handler = new Handler();
     }
 
@@ -86,127 +69,65 @@ public class PressureDropFragment extends Fragment {
         super.onAttach(activity);
 
         try {
-            mCallback = (OnCalculatePressureDropListener)activity;
+            mCallback = (OnCalculatePressureDropListener) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString()
                     + " must implement OnCalculateListener");
         }
     }
 
+    private TextView.OnEditorActionListener editorActionListener = new TextView.OnEditorActionListener() {
+        @Override
+        public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+            int result = i & EditorInfo.IME_MASK_ACTION;
+            switch (result) {
+                case EditorInfo.IME_ACTION_DONE:
+                case EditorInfo.IME_ACTION_NEXT:
+                    mainActivity.validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField}, goButton);
+                    return false;
+            }
+            return false;
+        }
+    };
+
+    private TextValidator getTextValidator(TextView textView) {
+        return new TextValidator(textView) {
+            @Override
+            public void validate(TextView textView, String text) {
+                mainActivity.validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField}, goButton);
+            }
+        };
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        mainActivity = (MainActivity)getActivity();
-
-        XmlPullParserFactory pullParserFactory;
-
-        try {
-            pullParserFactory = XmlPullParserFactory.newInstance();
-            XmlPullParser parser = pullParserFactory.newPullParser();
-
-            InputStream in_s = this.getResources().openRawResource(R.raw.units);
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-            parser.setInput(in_s, null);
-
-            parseUnitXML(parser);
-        } catch (XmlPullParserException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        mainActivity = (MainActivity) getActivity();
 
         View rootView = inflater.inflate(R.layout.fragment_pressure_drop, container, false);
 
-        flowField = (FloatLabelEditText)rootView.findViewById(R.id.flow_label_pd);
-        flowField.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                int result = i & EditorInfo.IME_MASK_ACTION;
-                switch (result) {
-                    case EditorInfo.IME_ACTION_DONE:
-                    case EditorInfo.IME_ACTION_NEXT:
-                        validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
-                        return false;
-                }
-                return false;
-            }
-        });
-        flowField.getEditText().addTextChangedListener(new TextValidator(flowField.getEditText()) {
-            @Override
-            public void validate(TextView textView, String text) {
-                validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
-            }
-        });
+        flowField = (FloatLabelEditText) rootView.findViewById(R.id.flow_label_pd);
+        flowField.getEditText().setOnEditorActionListener(editorActionListener);
+        flowField.getEditText().addTextChangedListener(getTextValidator(flowField.getEditText()));
 
-        cvField = (FloatLabelEditText)rootView.findViewById(R.id.cvkv_label_pd);
-        cvField.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                int result = i & EditorInfo.IME_MASK_ACTION;
-                switch (result) {
-                    case EditorInfo.IME_ACTION_DONE:
-                    case EditorInfo.IME_ACTION_NEXT:
-                        validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
-                        return false;
-                }
-                return false;
-            }
-        });
-        cvField.getEditText().addTextChangedListener(new TextValidator(cvField.getEditText()) {
-            @Override
-            public void validate(TextView textView, String text) {
-                validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
-            }
-        });
-        pressureField = (FloatLabelEditText)rootView.findViewById(R.id.pressure_label_pd);
-        pressureField.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                int result = i & EditorInfo.IME_MASK_ACTION;
-                switch (result) {
-                    case EditorInfo.IME_ACTION_DONE:
-                    case EditorInfo.IME_ACTION_NEXT:
-                        validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
-                        return false;
-                }
-                return false;
-            }
-        });
-        pressureField.getEditText().addTextChangedListener(new TextValidator(pressureField.getEditText()) {
-            @Override
-            public void validate(TextView textView, String text) {
-                validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
-            }
-        });
+        cvField = (FloatLabelEditText) rootView.findViewById(R.id.cvkv_label_pd);
+        cvField.getEditText().setOnEditorActionListener(editorActionListener);
+        cvField.getEditText().addTextChangedListener(getTextValidator(cvField.getEditText()));
 
-        temperatureField = (FloatLabelEditText)rootView.findViewById(R.id.temperature_label_pd);
-        temperatureField.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                int result = i & EditorInfo.IME_MASK_ACTION;
-                switch (result) {
-                    case EditorInfo.IME_ACTION_DONE:
-                    case EditorInfo.IME_ACTION_NEXT:
-                        validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
-                        return false;
-                }
-                return false;
-            }
-        });
-        temperatureField.getEditText().addTextChangedListener(new TextValidator(temperatureField.getEditText()) {
-            @Override
-            public void validate(TextView textView, String text) {
-                validateTextFields(new FloatLabelEditText[]{flowField, cvField, pressureField, temperatureField});
-            }
-        });
+        pressureField = (FloatLabelEditText) rootView.findViewById(R.id.pressure_label_pd);
+        pressureField.getEditText().setOnEditorActionListener(editorActionListener);
+        pressureField.getEditText().addTextChangedListener(getTextValidator(pressureField.getEditText()));
 
-        flowUnits = (Spinner)rootView.findViewById(R.id.flow_units_pd);
-        UnitsXmlAdapter unitsXmlAdapter = new UnitsXmlAdapter(flowUnitList);
-        flowUnits.setAdapter(unitsXmlAdapter);
+        temperatureField = (FloatLabelEditText) rootView.findViewById(R.id.temperature_label_pd);
+        temperatureField.getEditText().setOnEditorActionListener(editorActionListener);
+        temperatureField.getEditText().addTextChangedListener(getTextValidator(temperatureField.getEditText()));
+
+        flowUnits = (Spinner) rootView.findViewById(R.id.flow_units_pd);
+        flowUnits.setAdapter(mainActivity.flowUnitsXmlAdapter);
         flowUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                selectedFlowUnit = (Unit)parent.getItemAtPosition(pos);
+                selectedFlowUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -215,13 +136,12 @@ public class PressureDropFragment extends Fragment {
             }
         });
 
-        cvkvUnits = (Spinner)rootView.findViewById(R.id.cvkv_units_pd);
-        unitsXmlAdapter = new UnitsXmlAdapter(cvkvUnitList);
-        cvkvUnits.setAdapter(unitsXmlAdapter);
+        cvkvUnits = (Spinner) rootView.findViewById(R.id.cvkv_units_pd);
+        cvkvUnits.setAdapter(mainActivity.cvkvUnitsXmlAdapter);
         cvkvUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                selectedCvKvUnit = (Unit)parent.getItemAtPosition(pos);
+                selectedCvKvUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -230,13 +150,12 @@ public class PressureDropFragment extends Fragment {
             }
         });
 
-        pressureUnits = (Spinner)rootView.findViewById(R.id.pressure_units_pd);
-        unitsXmlAdapter = new UnitsXmlAdapter(pressureUnitList);
-        pressureUnits.setAdapter(unitsXmlAdapter);
+        pressureUnits = (Spinner) rootView.findViewById(R.id.pressure_units_pd);
+        pressureUnits.setAdapter(mainActivity.pressureUnitsXmlAdapter);
         pressureUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                selectedPressureUnit = (Unit)parent.getItemAtPosition(pos);
+                selectedPressureUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -245,13 +164,12 @@ public class PressureDropFragment extends Fragment {
             }
         });
 
-        temperatureUnits = (Spinner)rootView.findViewById(R.id.temperature_units_pd);
-        unitsXmlAdapter = new UnitsXmlAdapter(temperatureUnitList);
-        temperatureUnits.setAdapter(unitsXmlAdapter);
+        temperatureUnits = (Spinner) rootView.findViewById(R.id.temperature_units_pd);
+        temperatureUnits.setAdapter(mainActivity.temperatureUnitsXmlAdapter);
         temperatureUnits.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                selectedTemperatureUnit = (Unit)parent.getItemAtPosition(pos);
+                selectedTemperatureUnit = (Unit) parent.getItemAtPosition(pos);
             }
 
             @Override
@@ -259,6 +177,7 @@ public class PressureDropFragment extends Fragment {
                 // Do nothing;
             }
         });
+
         if (mainActivity.selectedFluid != null) {
             if (mainActivity.selectedFluid.getState().equals("gas")) {
                 temperatureField.setVisibility(View.VISIBLE);
@@ -273,7 +192,7 @@ public class PressureDropFragment extends Fragment {
         Outline outline = new Outline();
         outline.setOval(0, 0, diameter, diameter);
 
-        goButton = (ImageButton)rootView.findViewById(R.id.go_button_pd);
+        goButton = (ImageButton) rootView.findViewById(R.id.go_button_pd);
         goButton.setOutline(outline);
         goButton.setClipToOutline(true);
         goButton.setVisibility(View.INVISIBLE);
@@ -284,22 +203,21 @@ public class PressureDropFragment extends Fragment {
             }
         });
 
-        inletOuletSwitch = (Switch)rootView.findViewById(R.id.inlet_outlet_switch);
+        inletOuletSwitch = (Switch) rootView.findViewById(R.id.inlet_outlet_switch);
         inletOuletSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
                 if (isChecked) {
                     pressureField.setHint(getString(R.string.outlet));
                     inletPressure = false;
-                }
-                else {
+                } else {
                     pressureField.setHint(getString(R.string.inlet));
                     inletPressure = true;
                 }
             }
         });
 
-        return  rootView;
+        return rootView;
     }
 
     @Override
@@ -307,118 +225,21 @@ public class PressureDropFragment extends Fragment {
         super.onCreate(savedInstanceState);
     }
 
-    private class UnitsXmlAdapter extends BaseAdapter implements SpinnerAdapter {
-
-        private final List<Unit> data;
-
-        public UnitsXmlAdapter(List<Unit> data) {
-            this.data = data;
-        }
-
-        @Override
-        public int getCount() {
-            return data.size();
-        }
-
-        @Override
-        public Object getItem(int position) {
-            return data.get(position);
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public View getDropDownView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                LayoutInflater vi = (LayoutInflater)getActivity().getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = vi.inflate(R.layout.spinner_dropdown_item, parent, false);
-            }
-            ((TextView)convertView).setText(data.get(position).unitName);
-            return convertView;
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                LayoutInflater vi = (LayoutInflater)getActivity().getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = vi.inflate(R.layout.spinner_dropdown_item, parent, false);
-            }
-            ((TextView)convertView).setText(data.get(position).unitName);
-            return convertView;
-        }
-    }
-
-    private void parseUnitXML(XmlPullParser parser) throws XmlPullParserException, IOException {
-        int eventType = parser.getEventType();
-        Unit currentUnit = null;
-
-        while (eventType != XmlPullParser.END_DOCUMENT) {
-            String name;
-            switch (eventType) {
-                case XmlPullParser.START_DOCUMENT:
-                    flowUnitList = new ArrayList<Unit>();
-                    pressureUnitList = new ArrayList<Unit>();
-                    temperatureUnitList = new ArrayList<Unit>();
-                    cvkvUnitList = new ArrayList<Unit>();
-                    densityUnitList = new ArrayList<Unit>();
-                    break;
-                case XmlPullParser.START_TAG:
-                    name = parser.getName();
-                    if (name.equals("Unit")) {
-                        currentUnit = new Unit();
-                    } else if (currentUnit != null) {
-                        if (name.equals("Name")) {
-                            currentUnit.unitName = parser.nextText();
-                        } else if (name.equals("Factor")) {
-                            currentUnit.factor = Float.parseFloat(parser.nextText());
-                        } else if (name.equals("UnitType")) {
-                            currentUnit.unitType = parser.nextText();
-                        }
-                    }
-                    break;
-                case XmlPullParser.END_TAG:
-                    name = parser.getName();
-                    if (name.equalsIgnoreCase("Unit") && currentUnit != null) {
-                        if (currentUnit.unitType.equals("Volumetric")) {
-                            flowUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("Mass")) {
-                            flowUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("Pressure")) {
-                            pressureUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("Temperature")) {
-                            temperatureUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("CvKv")) {
-                            cvkvUnitList.add(currentUnit);
-                        } else if (currentUnit.unitType.equals("Density")) {
-                            densityUnitList.add(currentUnit);
-                        }
-                    }
-            }
-            eventType = parser.next();
-        }
-    }
-
-    private void validateTextFields(FloatLabelEditText[] fields) {
-        for (FloatLabelEditText field : fields) {
-            if (field.getVisibility() == View.VISIBLE && field.getText().length() <=0 ) {
-                goButton.setVisibility(View.INVISIBLE);
-                return;
-            }
-        }
-        goButton.setVisibility(View.VISIBLE);
+    @Override
+    public void onResume() {
+        super.onResume();
+        goButton.setEnabled(true);
     }
 
     private void Calculate() {
+        goButton.setEnabled(false);
         Fluid selectedFluid = mainActivity.selectedFluid;
         double flowRate = Double.parseDouble(flowField.getText()) *
                 selectedFlowUnit.factor;
         double kvValue = Double.parseDouble(cvField.getText()) *
                 selectedCvKvUnit.factor;
-        double pressure = Double.parseDouble(pressureField.getText()) *
-                selectedPressureUnit.factor;
+        double pressure = (Double.parseDouble(pressureField.getText()) *
+                selectedPressureUnit.factor) + 1;
         double temperature;
         double diffPressure;
 
@@ -434,21 +255,28 @@ public class PressureDropFragment extends Fragment {
             if (inletPressure) {
                 if ((Math.pow(pressure / 2, 2) - Math.pow((flowRate / (514 * kvValue)), 2) *
                         selectedFluid.getDensity() * temperature) < 0) {
-                    mCallback.displayResultCard(getString(R.string.error1));
+                    Toast.makeText(getActivity().getBaseContext(), getString(R.string.error1), Toast.LENGTH_SHORT).show();
                     return;
                 } else {
                     diffPressure = (pressure / 2) - (Math.sqrt(Math.pow(pressure / 2, 2) -
-                        Math.pow(flowRate / (514 * kvValue), 2) * selectedFluid.getDensity() * temperature));
+                            Math.pow(flowRate / (514 * kvValue), 2) * selectedFluid.getDensity() * temperature));
                 }
             } else {
                 diffPressure = Math.pow(flowRate / (514 * kvValue), 2) * temperature
                         * selectedFluid.getDensity() / pressure;
                 if (pressure < ((pressure + diffPressure) / 2)) {
                     diffPressure = flowRate * Math.sqrt(selectedFluid.getDensity() * temperature)
-                        / (257 * kvValue) - pressure;
+                            / (257 * kvValue) - pressure;
                 }
-             }
+            }
         }
-        mCallback.displayResultCard(String.format("Pressure drop:\t%.3f %s", diffPressure / selectedPressureUnit.factor, selectedPressureUnit.unitName));
+
+        final Double finalDiffPressure = diffPressure;
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mCallback.displayResultCard(finalDiffPressure, selectedPressureUnit.unitName);
+            }
+        }, 200);
     }
 }
