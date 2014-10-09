@@ -2,6 +2,7 @@ package com.burkert.cvcalculator;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.graphics.Outline;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
@@ -217,6 +219,9 @@ public class PressureDropFragment extends Fragment {
             }
         });
 
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(rootView.getWindowToken(), 0);
+
         return rootView;
     }
 
@@ -256,6 +261,7 @@ public class PressureDropFragment extends Fragment {
                 if ((Math.pow(pressure / 2, 2) - Math.pow((flowRate / (514 * kvValue)), 2) *
                         selectedFluid.getDensity() * temperature) < 0) {
                     Toast.makeText(getActivity().getBaseContext(), getString(R.string.error1), Toast.LENGTH_SHORT).show();
+                    goButton.setEnabled(true);
                     return;
                 } else {
                     diffPressure = (pressure / 2) - (Math.sqrt(Math.pow(pressure / 2, 2) -
@@ -277,6 +283,6 @@ public class PressureDropFragment extends Fragment {
             public void run() {
                 mCallback.displayResultCard(finalDiffPressure, selectedPressureUnit.unitName);
             }
-        }, 200);
+        }, 150);
     }
 }

@@ -1,6 +1,7 @@
 package com.burkert.cvcalculator;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Outline;
 import android.os.Bundle;
 import android.app.Fragment;
@@ -9,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 
 import android.os.Handler;
@@ -91,9 +93,18 @@ public class CvKvFragment extends Fragment {
             @Override
             public void validate(TextView textView, String text) {
                 mainActivity.validateTextFields(new FloatLabelEditText[]{flowField, inletField, outletField, temperatureField}, goButton);
-                if (inletField.getText().length() > 0 && outletField.getText().length() > 0) {
-                    if (Double.parseDouble(inletField.getText()) <= Double.parseDouble(outletField.getText())) {
-                        Toast.makeText(getActivity().getBaseContext(), "Inlet pressure must be higher than outlet pressure.", Toast.LENGTH_SHORT).show();
+                if (textView == inletField.getEditText() || textView == outletField.getEditText()) {
+                    if (inletField.getText().length() > 0 && outletField.getText().length() > 0 &&
+                            !inletField.getText().equals("-") && !outletField.getText().equals("-")) {
+                        if (Double.parseDouble(inletField.getText()) >= 0) {
+                            if (Double.parseDouble(inletField.getText()) <= Double.parseDouble(outletField.getText())) {
+                                Toast.makeText(getActivity().getBaseContext(), "Inlet pressure must be higher than outlet pressure.", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            if (Double.parseDouble(outletField.getText()) < 0) {
+                                Toast.makeText(getActivity().getBaseContext(), "Outlet pressure must be at least 0.", Toast.LENGTH_SHORT).show();
+                            }
+                        }
                     }
                 }
             }
@@ -143,6 +154,7 @@ public class CvKvFragment extends Fragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 selectedInletUnit = (Unit) parent.getItemAtPosition(pos);
+                outletUnits.setSelection(pos);
             }
 
             @Override
@@ -157,6 +169,7 @@ public class CvKvFragment extends Fragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 selectedOutletUnit = (Unit) parent.getItemAtPosition(pos);
+                inletUnits.setSelection(pos);
             }
 
             @Override
@@ -204,6 +217,9 @@ public class CvKvFragment extends Fragment {
             }
         });
 
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(rootView.getWindowToken(), 0);
+
         return rootView;
     }
 
@@ -232,6 +248,7 @@ public class CvKvFragment extends Fragment {
         double temperature = 0;
         if (outletPressure >= inletPressure) {
             Toast.makeText(getActivity().getBaseContext(), "Inlet pressure must be higher than outlet pressure.", Toast.LENGTH_SHORT).show();
+            goButton.setEnabled(true);
             return;
         }
         if (selectedFluid.getState().equals("gas")) {
@@ -269,6 +286,6 @@ public class CvKvFragment extends Fragment {
             public void run() {
                 mCallback.displayResultCard(finalResultText);
             }
-        }, 200);
+        }, 150);
     }
 }

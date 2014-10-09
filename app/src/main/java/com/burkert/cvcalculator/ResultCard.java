@@ -112,6 +112,7 @@ public class ResultCard extends Activity {
                 for (Unit unit : flowUnitList) {
                     if (unit.unitName.equals(getResources().getString(R.string.default_flow_unit))) {
                         resultSpinner.setSelection(flowUnitList.indexOf(unit));
+                        selectedFlowUnit = unit;
                         break;
                     }
                 }

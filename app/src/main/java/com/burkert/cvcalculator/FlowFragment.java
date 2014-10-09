@@ -2,6 +2,7 @@ package com.burkert.cvcalculator;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.graphics.Outline;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.Spinner;
@@ -90,6 +92,13 @@ public class FlowFragment extends Fragment {
             @Override
             public void validate(TextView textView, String text) {
                 mainActivity.validateTextFields(new FloatLabelEditText[]{cvField, inletField, outletField, temperatureField}, goButton);
+                if (textView == inletField.getEditText() || textView == outletField.getEditText()) {
+                    if (inletField.getText().length() > 0 && outletField.getText().length() > 0) {
+                        if (Double.parseDouble(inletField.getText()) <= Double.parseDouble(outletField.getText())) {
+                            Toast.makeText(getActivity().getBaseContext(), "Inlet pressure must be higher than outlet pressure.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
             }
         };
     }
@@ -137,6 +146,7 @@ public class FlowFragment extends Fragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 selectedInletUnit = (Unit) parent.getItemAtPosition(pos);
+                outletUnits.setSelection(pos);
             }
 
             @Override
@@ -151,6 +161,7 @@ public class FlowFragment extends Fragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 selectedOutletUnit = (Unit) parent.getItemAtPosition(pos);
+                inletUnits.setSelection(pos);
             }
 
             @Override
@@ -198,6 +209,9 @@ public class FlowFragment extends Fragment {
             }
         });
 
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(rootView.getWindowToken(), 0);
+
         return rootView;
     }
 
@@ -226,6 +240,7 @@ public class FlowFragment extends Fragment {
         double temperature = 0;
         if (outletPressure >= inletPressure) {
             Toast.makeText(getActivity().getBaseContext(), "Inlet pressure must be higher than outlet pressure.", Toast.LENGTH_SHORT).show();
+            goButton.setEnabled(true);
             return;
         }
         if (selectedFluid.getState().equals("gas")) {
@@ -255,6 +270,6 @@ public class FlowFragment extends Fragment {
             public void run() {
                 mCallback.displayResultCard(finalFlowRate);
             }
-        }, 200);
+        }, 150);
     }
 }
